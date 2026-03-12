@@ -9,26 +9,10 @@ export class NepseProvider implements MarketProvider {
     private readonly NEPSE_API_URL = 'https://nepse-data-api.herokuapp.com/api/v1/nots/nepse-data/today-price';
 
     async fetchAllStocks(): Promise<StockData[]> {
-        try {
-            const response = await axios.get(this.NEPSE_API_URL, { timeout: 5000 });
-            const data = response.data;
-            if (!Array.isArray(data)) {
-                throw new Error('Invalid NEPSE data format');
-            }
-
-            return data.map((item: any) => ({
-                symbol: item.symbol,
-                name: item.companyName || item.symbol,
-                price: Number(item.lastTradedPrice || 0),
-                change: Number(item.schange || 0),
-                changePercent: Number(item.percentageChange || 0),
-                volume: Number(item.totalTradeQuantity || 0),
-                lastUpdated: new Date()
-            }));
-        } catch (error: any) {
-            console.error(`[NepseProvider] Failed to fetch all stocks:`, error.message);
-            throw error;
-        }
+        // The herokuapp is no longer active and returns 404.
+        // We will immediately throw to trigger the MarketService fallback to MockProvider
+        // without flooding the console with errors.
+        throw new Error('NEPSE API is discontinued. Falling back to MockProvider internally.');
     }
 
     async fetchStock(symbol: string): Promise<StockData | null> {
