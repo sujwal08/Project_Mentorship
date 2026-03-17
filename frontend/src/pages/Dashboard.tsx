@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/axios';
 import { useMarketStore } from '../store/useMarketStore';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Sector } from 'recharts';
 
 interface Holding {
     id: string;
@@ -18,6 +18,7 @@ interface Portfolio {
 export default function Dashboard() {
     const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
     const [loading, setLoading] = useState(true);
+    const [activeIndex, setActiveIndex] = useState(0);
     const { stocks, fetchInitialStocks, initializeSocketEvents } = useMarketStore();
 
     useEffect(() => {
@@ -69,6 +70,56 @@ export default function Dashboard() {
     // Add Cash to allocation chart
     chartData.push({ name: 'Cash', value: currentBalance });
 
+    const onPieEnter = (_: any, index: number) => {
+        setActiveIndex(index);
+    };
+
+    const renderActiveShape = (props: any) => {
+        const RADIAN = Math.PI / 180;
+        const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
+        const sin = Math.sin(-RADIAN * midAngle);
+        const cos = Math.cos(-RADIAN * midAngle);
+        const sx = cx + (outerRadius + 10) * cos;
+        const sy = cy + (outerRadius + 10) * sin;
+        const mx = cx + (outerRadius + 30) * cos;
+        const my = cy + (outerRadius + 30) * sin;
+        const ex = mx + (cos >= 0 ? 1 : -1) * 22;
+        const ey = my;
+        const textAnchor = cos >= 0 ? 'start' : 'end';
+
+        return (
+            <g>
+                <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill} className="font-bold text-lg">
+                    {payload.name}
+                </text>
+                <Sector
+                    cx={cx}
+                    cy={cy}
+                    innerRadius={innerRadius}
+                    outerRadius={outerRadius + 10}
+                    startAngle={startAngle}
+                    endAngle={endAngle}
+                    fill={fill}
+                />
+                <Sector
+                    cx={cx}
+                    cy={cy}
+                    startAngle={startAngle}
+                    endAngle={endAngle}
+                    innerRadius={outerRadius + 12}
+                    outerRadius={outerRadius + 15}
+                    fill={fill}
+                />
+                <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
+                <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
+                <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} textAnchor={textAnchor} fill="#333" className="text-sm font-semibold">{`NPR ${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</text>
+                <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} dy={18} textAnchor={textAnchor} fill="#999" className="text-xs">
+                    {`(${(percent * 100).toFixed(1)}%)`}
+                </text>
+            </g>
+        );
+    };
+
     return (
         <div className="space-y-6">
             <h1 className="text-3xl font-black tracking-tight text-slate-900 mb-2">Dashboard</h1>
@@ -98,6 +149,7 @@ export default function Dashboard() {
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
+                                    {...({ activeIndex, activeShape: renderActiveShape } as any)}
                                     data={chartData}
                                     cx="50%"
                                     cy="50%"
@@ -105,9 +157,10 @@ export default function Dashboard() {
                                     outerRadius={80}
                                     paddingAngle={5}
                                     dataKey="value"
+                                    onMouseEnter={onPieEnter}
                                 >
                                     {chartData.map((_entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="cursor-pointer transition-all duration-300" />
                                     ))}
                                 </Pie>
                                 <Tooltip

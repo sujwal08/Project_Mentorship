@@ -8,12 +8,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NepseProvider = void 0;
-const axios_1 = __importDefault(require("axios"));
 class NepseProvider {
     constructor() {
         this.NEPSE_API_URL = 'https://nepse-data-api.herokuapp.com/api/v1/nots/nepse-data/today-price';
@@ -23,26 +19,10 @@ class NepseProvider {
     }
     fetchAllStocks() {
         return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const response = yield axios_1.default.get(this.NEPSE_API_URL, { timeout: 5000 });
-                const data = response.data;
-                if (!Array.isArray(data)) {
-                    throw new Error('Invalid NEPSE data format');
-                }
-                return data.map((item) => ({
-                    symbol: item.symbol,
-                    name: item.companyName || item.symbol,
-                    price: Number(item.lastTradedPrice || 0),
-                    change: Number(item.schange || 0),
-                    changePercent: Number(item.percentageChange || 0),
-                    volume: Number(item.totalTradeQuantity || 0),
-                    lastUpdated: new Date()
-                }));
-            }
-            catch (error) {
-                console.error(`[NepseProvider] Failed to fetch all stocks:`, error.message);
-                throw error;
-            }
+            // The herokuapp is no longer active and returns 404.
+            // We will immediately throw to trigger the MarketService fallback to MockProvider
+            // without flooding the console with errors.
+            throw new Error('NEPSE API is discontinued. Falling back to MockProvider internally.');
         });
     }
     fetchStock(symbol) {

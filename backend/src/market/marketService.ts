@@ -24,7 +24,6 @@ class MarketService {
         this.io = ioServer;
         this.isPolling = true;
 
-        console.log(`[MarketService] Starting market polling...`);
         this.pollLoop();
     }
 
@@ -42,13 +41,11 @@ class MarketService {
             try {
                 data = await this.nepseProvider.fetchAllStocks();
                 if (this.provider.name !== this.nepseProvider.name) {
-                    console.log(`[MarketService] Switching to ${this.nepseProvider.name}`);
                     this.provider = this.nepseProvider;
                 }
             } catch (err) {
                 // Fallback to Mock
                 if (this.provider.name !== this.mockProvider.name) {
-                    console.log(`[MarketService] NEPSE failed. Falling back to ${this.mockProvider.name}`);
                     this.provider = this.mockProvider;
                 }
                 data = await this.mockProvider.fetchAllStocks();

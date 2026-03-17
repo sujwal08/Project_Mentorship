@@ -45,4 +45,31 @@ router.get('/stocks/:symbol/history', (req, res) => {
     }
     res.json(history);
 });
+router.get('/stocks/:symbol/ai-insight', (req, res) => {
+    const symbol = req.params.symbol;
+    const stock = marketService_1.marketService.getCachedStock(symbol);
+    if (!stock) {
+        return res.status(404).json({ error: 'Stock not found' });
+    }
+    // Generate a contextual but simulated AI insight
+    const isPositive = stock.change >= 0;
+    const volatility = Math.abs(stock.changePercent);
+    let analysis = "";
+    if (volatility > 1.5) {
+        analysis = isPositive
+            ? `DemoTrade AI detects strong bullish momentum for ${stock.symbol}. Huge volume and a breakout above resistance levels suggest the rally could continue in the short term. Proceed with trailing stop losses.`
+            : `DemoTrade AI warns of a sharp bearish crossover in ${stock.symbol}'s recent action. High volatility combined with a ${stock.changePercent.toFixed(2)}% drop indicates selling pressure. Wait for a solid floor before buying.`;
+    }
+    else {
+        analysis = isPositive
+            ? `DemoTrade AI observes a steady sideways-to-bullish consolidation for ${stock.symbol}. The stock is slowly gaining ground. Good for long-term accumulation.`
+            : `DemoTrade AI notes a minor dip for ${stock.symbol}. The stock is hovering near its support zone. A potential entry point if the broader market stabilizes.`;
+    }
+    res.json({
+        symbol: stock.symbol,
+        insight: analysis,
+        confidenceScore: Math.floor(Math.random() * 20) + 75, // 75-94%
+        sentiment: isPositive ? 'BULLISH' : 'BEARISH'
+    });
+});
 exports.default = router;

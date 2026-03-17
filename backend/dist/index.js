@@ -28,9 +28,7 @@ exports.io = new socket_io_1.Server(server, {
     }
 });
 exports.io.on('connection', (socket) => {
-    console.log(`Client connected: ${socket.id}`);
     socket.on('disconnect', () => {
-        console.log(`Client disconnected: ${socket.id}`);
     });
 });
 server.listen(PORT, () => __awaiter(void 0, void 0, void 0, function* () {
