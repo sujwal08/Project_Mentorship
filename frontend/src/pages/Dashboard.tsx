@@ -17,6 +17,7 @@ interface Portfolio {
 
 export default function Dashboard() {
     const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
+    const [recommendations, setRecommendations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeIndex, setActiveIndex] = useState(0);
     const { stocks, fetchInitialStocks, initializeSocketEvents } = useMarketStore();
@@ -29,6 +30,10 @@ export default function Dashboard() {
             try {
                 const res = await api.get('/trades/portfolio');
                 setPortfolio(res.data);
+
+                // Fetch AI recommendations
+                const recRes = await api.get('/market/recommendations');
+                setRecommendations(recRes.data);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -212,6 +217,46 @@ export default function Dashboard() {
                         </table>
                     </div>
                 </div>
+            </div>
+
+            {/* AI Recommendations Section */}
+            <div className="mt-8">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-black">
+                        AI
+                    </div>
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Top Recommendations</h2>
+                </div>
+
+                {recommendations.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {recommendations.map(rec => (
+                            <div key={rec.symbol} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/60 hover:shadow-md transition-shadow relative overflow-hidden group">
+                                <div className={`absolute top-0 left-0 w-1 h-full ${rec.sentiment === 'BULLISH' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h3 className="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors uppercase">
+                                            <a href={`/market/${rec.symbol}`}>{rec.symbol}</a>
+                                        </h3>
+                                        <p className="text-xs text-slate-500 font-medium truncate max-w-[150px]">{rec.name}</p>
+                                    </div>
+                                    <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${rec.sentiment === 'BULLISH' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                        {rec.sentiment}
+                                    </span>
+                                </div>
+                                <p className="text-slate-700 text-sm font-medium leading-relaxed mb-4">
+                                    {rec.insight}
+                                </p>
+                                <div className="flex items-center justify-between text-xs font-semibold text-slate-500 border-t border-slate-100 pt-3 mt-auto">
+                                    <span>DemoTrade AI Confidence</span>
+                                    <span className="text-slate-900">{rec.confidenceScore}%</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-slate-400 text-sm">Gathering market data...</div>
+                )}
             </div>
         </div>
     );

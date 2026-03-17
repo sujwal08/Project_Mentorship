@@ -89,4 +89,29 @@ router.get('/stocks/:symbol/ai-insight', (req: Request, res: Response) => {
     });
 });
 
+router.get('/recommendations', (req: Request, res: Response) => {
+    const allStocks = marketService.getCachedStocks();
+
+    // Sort by absolute percentage change to find most "active" stocks
+    const sorted = [...allStocks].sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
+
+    // Pick the top 3 items
+    const top3 = sorted.slice(0, 3);
+
+    const recommendations = top3.map(stock => {
+        const isPositive = stock.change >= 0;
+        return {
+            symbol: stock.symbol,
+            name: stock.name,
+            insight: isPositive
+                ? `Trending upwards with strong +${stock.changePercent.toFixed(2)}% momentum today. Consider entering a long position on this breakout.`
+                : `Facing a sharp drop of ${Math.abs(stock.changePercent).toFixed(2)}%. Strong support tests currently observed. Hold or seek bargain entries.`,
+            sentiment: isPositive ? 'BULLISH' : 'BEARISH',
+            confidenceScore: Math.floor(Math.random() * 15) + 80 // 80-94%
+        };
+    });
+
+    res.json(recommendations);
+});
+
 export default router;

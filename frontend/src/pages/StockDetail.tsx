@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../api/axios';
 import { useMarketStore } from '../store/useMarketStore';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Brush } from 'recharts';
 import { format } from 'date-fns';
 
 export default function StockDetail() {
@@ -17,6 +17,7 @@ export default function StockDetail() {
     const [inWatchlist, setInWatchlist] = useState(false);
     const [historyData, setHistoryData] = useState<any[]>([]);
     const [aiInsight, setAiInsight] = useState<any>(null);
+    const [shareText, setShareText] = useState('Share Analysis');
 
     const stock = stocks.find(s => s.symbol.toUpperCase() === symbol?.toUpperCase());
 
@@ -78,6 +79,27 @@ export default function StockDetail() {
         }
     };
 
+    const handleShare = async () => {
+        if (!stock || !aiInsight) return;
+
+        const text = `DemoTrade AI Insight on ${stock.symbol} (${aiInsight.sentiment}): ${aiInsight.insight}`;
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: `${stock.symbol} Analysis`,
+                    text: text,
+                    url: window.location.href,
+                });
+            } catch (err) {
+                console.error('Share failed:', err);
+            }
+        } else {
+            await navigator.clipboard.writeText(text);
+            setShareText('Copied!');
+            setTimeout(() => setShareText('Share Analysis'), 2000);
+        }
+    };
+
     if (!stock) return <div className="p-10 text-center">Loading stock details...</div>;
 
     const totalValue = quantity ? stock.price * Number(quantity) : 0;
@@ -133,8 +155,8 @@ export default function StockDetail() {
                                 <AreaChart data={historyData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                            <stop offset="5%" stopColor={stock.change >= 0 ? "#10b981" : "#ef4444"} stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor={stock.change >= 0 ? "#10b981" : "#ef4444"} stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -157,7 +179,8 @@ export default function StockDetail() {
                                         formatter={(value: any) => [`NPR ${Number(value).toFixed(2)}`, 'Price']}
                                         labelFormatter={(label) => format(new Date(label), 'PPP')}
                                     />
-                                    <Area type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorPrice)" />
+                                    <Area type="monotone" dataKey="price" stroke={stock.change >= 0 ? "#10b981" : "#ef4444"} strokeWidth={3} fillOpacity={1} fill="url(#colorPrice)" />
+                                    <Brush dataKey="date" height={30} stroke="#94a3b8" tickFormatter={() => ''} />
                                 </AreaChart>
                             </ResponsiveContainer>
                         ) : (
@@ -170,25 +193,36 @@ export default function StockDetail() {
                 {aiInsight && (
                     <div className="mt-8 bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-2xl border border-indigo-100/50 shadow-sm relative overflow-hidden">
                         <div className="absolute -right-10 -top-10 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl"></div>
-                        <div className="flex items-start gap-4 relative z-10">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-indigo-500/20 text-white font-black text-xl">
-                                AI
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-3 mb-2">
-                                    <h3 className="text-lg font-black text-slate-900 tracking-tight">DemoTrade Analysis</h3>
-                                    <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${aiInsight.sentiment === 'BULLISH' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                        {aiInsight.sentiment}
-                                    </span>
-                                    <span className="text-xs font-semibold text-slate-500">
-                                        {aiInsight.confidenceScore}% Confidence
+
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10 w-full mb-4">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-indigo-500/20 text-white font-black text-xl">
+                                    AI
+                                </div>
+                                <div className="flex flex-col">
+                                    <div className="flex items-center gap-3">
+                                        <h3 className="text-lg font-black text-slate-900 tracking-tight">DemoTrade Analysis</h3>
+                                        <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${aiInsight.sentiment === 'BULLISH' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                            {aiInsight.sentiment}
+                                        </span>
+                                    </div>
+                                    <span className="text-xs font-semibold text-slate-500 mt-1">
+                                        {aiInsight.confidenceScore}% Confidence Score
                                     </span>
                                 </div>
-                                <p className="text-slate-700 font-medium leading-relaxed">
-                                    {aiInsight.insight}
-                                </p>
                             </div>
+                            <button
+                                onClick={handleShare}
+                                className="px-4 py-2 bg-white/60 hover:bg-white backdrop-blur-sm border border-indigo-100/50 hover:border-indigo-200 text-indigo-700 rounded-lg text-sm font-bold transition-all shadow-sm flex items-center gap-2"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                                {shareText}
+                            </button>
                         </div>
+
+                        <p className="text-slate-700 font-medium leading-relaxed relative z-10 pl-16 sm:pl-0 mt-4 sm:mt-0">
+                            {aiInsight.insight}
+                        </p>
                     </div>
                 )}
 
